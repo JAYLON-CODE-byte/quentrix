@@ -1106,32 +1106,54 @@ function removeTyping() {
 
 /* ---------- Backend communication ---------- */
 async function callBackend(message) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), CONFIG.timeoutMs);
+    // 1. Try the Python Backend first
     try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 5000); // 5s timeout for local backend
         const res = await fetch(CONFIG.chatEndpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({
-                message: message,
-                style: state.responseStyle
-            }),
+            body: JSON.stringify({ message: message, style: state.responseStyle }),
             signal: controller.signal
         });
         clearTimeout(timer);
-        if (!res.ok) {
-            throw new Error('HTTP ' + res.status);
+        
+        if (res.ok) {
+            const data = await res.json();
+            return data; // Backend worked! Return the response.
         }
-        const data = await res.json();
-        // Expected shape (example — adapt to real backend):
-        // { response: string, status?: string, capability?: string, activity?: string[] }
-        return data;
     } catch (err) {
-        clearTimeout(timer);
+        // Backend is unreachable. Continue to fallback.
+        console.log("Backend unreachable, switching to Pollinations fallback.");
+    }
+
+    // 2. Fallback: Call Pollinations AI directly from the browser
+    try {
+        // We build a simple prompt for Pollinations
+        const prompt = `You are QUENTRIX, Jaylon's personal AI. Answer this message: "${message}"`;
+        
+        // Pollinations API endpoint
+        const pollinationsUrl = `https://text.pollinations.ai/${encodeURIComponent(prompt)}`;
+        
+        const res = await fetch(pollinationsUrl);
+        if (!res.ok) throw new Error("Pollinations failed");
+        
+        const text = await res.text();
+        
+        // Format the response to match what the UI expects
+        return {
+            response: text,
+            status: 'ready',
+            capability: 'browser_fallback',
+            activity: ['Receiving request', 'Connecting to Pollinations', 'Generating response']
+        };
+
+    } catch (err) {
+        // 3. If everything fails, show the offline message
         return {
             response: null,
             status: 'offline',
-            error: err.name === 'AbortError' ? 'timeout' : 'unreachable',
+            error: 'unreachable',
             offline: true
         };
     }
