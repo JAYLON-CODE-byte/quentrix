@@ -1,1 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+    <title>Quentrix — AI System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Connects the CSS file -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
+<!-- SVG Definitions for the Logo -->
+<svg class="qx-svg-defs" aria-hidden="true">
+    <defs>
+        <linearGradient id="qGrad" x1="60" y1="40" x2="452" y2="472" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#00E5FF"/><stop offset="1" stop-color="#6D5DFC"/>
+        </linearGradient>
+    </defs>
+</svg>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+        <svg class="q-mark" viewBox="0 0 512 512" aria-hidden="true">
+            <circle cx="256" cy="256" r="148" fill="none" stroke="url(#qGrad)" stroke-width="34" stroke-linecap="round" stroke-dasharray="26 182 722"/>
+            <rect x="-55" y="-22" width="115" height="44" rx="22" fill="url(#qGrad)" transform="translate(379.7,379.7) rotate(45)"/>
+            <circle cx="256" cy="256" r="22" fill="#09090B" stroke="url(#qGrad)" stroke-width="5"/>
+            <circle cx="256" cy="256" r="9" fill="#00E5FF"/>
+        </svg>
+        <div class="brand-text">
+            <div class="brand-name">QUENTRIX</div>
+            <div class="brand-sub">AI System</div>
+        </div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-item active" data-view="chat" onclick="switchView('chat', this)">
+            <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 6h16v10a2 2 0 0 1-2 2H8l-4 3V6z"/></svg></span>
+            Chat
+        </div>
+        <div class="nav-item" data-view="research" onclick="switchView('research', this)">
+            <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>
+            Research
+        </div>
+        <div class="nav-item" data-view="projects" onclick="switchView('projects', this)">
+            <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3.5" y="6" width="17" height="13" rx="2"/><path d="M3.5 9h17M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6"/></svg></span>
+            Projects
+        </div>
+        <div class="nav-item" data-view="memory" onclick="switchView('memory', this)">
+            <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5"/><path d="M12 4v2M12 18v2M4 12h2M18 12h2"/></svg></span>
+            Memory
+        </div>
+        <div class="nav-item" data-view="tools" onclick="switchView('tools', this)">
+            <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 1 5.4-5.4L21 6l-3-3z"/></svg></span>
+            Tools
+        </div>
+        <div class="nav-item" data-view="settings" onclick="switchView('settings', this)">
+            <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4M4.2 4.2l2.8 2.8M17 17l2.8 2.8M4.2 19.8l2.8-2.8M17 7l2.8-2.8"/></svg></span>
+            Settings
+        </div>
+    </nav>
+    <div class="sidebar-footer">
+        <span class="status-dot" id="sidebarStatusDot"></span>
+        <span id="sidebarStatusText">Ready</span>
+    </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<div class="main-content" id="mainContent">
+    <header class="header">
+        <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Menu">
+            <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="header-title-area">
+            <span class="header-title">QUENTRIX</span>
+            <span class="header-subtitle">AI SYSTEM</span>
+        </div>
+        <div class="header-status" id="headerStatus" data-status="ready">
+            <span class="status-dot-sm"></span>
+            <span id="headerStatusText">READY</span>
+        </div>
+    </header>
+
+    <div class="view-container" id="viewContainer">
+        <!-- CHAT VIEW -->
+        <div class="view active" id="view-chat">
+            <div class="activity-panel" id="activityPanel" aria-live="polite">
+                <div class="activity-header"><span>Activity</span></div>
+                <ul class="activity-steps" id="activitySteps"></ul>
+            </div>
+
+            <div class="chat-area" id="chatArea">
+                <div class="message ai">
+                    <div class="msg-avatar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="none" stroke="#00E5FF" stroke-width="1.6"/><circle cx="12" cy="12" r="2" fill="#00E5FF"/></svg></div>
+                    <div class="message-col">
+                        <span class="message-sender">Quentrix</span>
+                        <div class="message-bubble">System interface ready. Connect a backend to enable research, memory, and tools.</div>
+                        <span class="message-time">Just now</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <button class="icon-btn" title="Attach" onclick="handleAttachment()" aria-label="Attach file">
+                    <svg viewBox="0 0 24 24"><path d="M21 11.5l-9.19 9.19a5 5 0 0 1-7.07-7.07L13.5 4.86a3.5 3.5 0 0 1 4.95 4.95L9.7 18.55a2 2 0 0 1-2.83-2.83l7.78-7.78"/></svg>
+                </button>
+                <div class="input-wrapper">
+                    <input type="text" id="chatInput" placeholder="Message Quentrix…" autocomplete="off" enterkeyhint="send" onkeydown="handleKeyDown(event)">
+                    <button class="icon-btn" id="voiceBtn" title="Voice" onclick="handleVoice()" aria-label="Voice input">
+                        <svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"/></svg>
+                    </button>
+                </div>
+                <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send" aria-label="Send">
+                    <svg viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- RESEARCH VIEW -->
+        <div class="view" id="view-research">
+            <div class="page-view">
+                <h2>Research</h2>
+                <p>Search the web and retrieve sources. Results are populated by the backend when connected.</p>
+                <div class="research-bar">
+                    <input type="text" id="researchInput" placeholder="Search query…" enterkeyhint="search" onkeydown="if(event.key==='Enter')runResearch()">
+                    <button class="research-btn" id="researchBtn" onclick="runResearch()">Search</button>
+                </div>
+                <div class="research-results" id="researchResults">
+                    <div class="empty-state">
+                        <p>No results yet</p>
+                        <div class="hint">Backend research module not connected</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PROJECTS VIEW -->
+        <div class="view" id="view-projects">
+            <div class="page-view">
+                <h2>Projects</h2>
+                <p>Projects managed by Quentrix. Data comes from the backend memory/project store.</p>
+                <div id="projectsList">
+                    <div class="empty-state">
+                        <p>No projects yet</p>
+                        <div class="hint">Projects will appear here when created through Quentrix</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MEMORY VIEW -->
+        <div class="view" id="view-memory">
+            <div class="page-view">
+                <h2>Memory</h2>
+                <p>Facts, preferences, and context stored by Quentrix. Populated by the backend.</p>
+                <div class="memory-section">
+                    <h3>Facts</h3>
+                    <div class="memory-list" id="memFacts"><div class="empty-state" style="padding:18px 14px;"><p style="margin:0;font-size:0.8rem;">No facts stored</p></div></div>
+                </div>
+                <div class="memory-section">
+                    <h3>Preferences</h3>
+                    <div class="memory-list" id="memPreferences"><div class="empty-state" style="padding:18px 14px;"><p style="margin:0;font-size:0.8rem;">No preferences stored</p></div></div>
+                </div>
+                <div class="memory-section">
+                    <h3>Projects</h3>
+                    <div class="memory-list" id="memProjects"><div class="empty-state" style="padding:18px 14px;"><p style="margin:0;font-size:0.8rem;">No project context</p></div></div>
+                </div>
+                <div class="memory-section">
+                    <h3>Learned Knowledge</h3>
+                    <div class="memory-list" id="memKnowledge"><div class="empty-state" style="padding:18px 14px;"><p style="margin:0;font-size:0.8rem;">No learned entries</p></div></div>
+                </div>
+                <div class="memory-section">
+                    <h3>Recent Context</h3>
+                    <div class="memory-list" id="memContext"><div class="empty-state" style="padding:18px 14px;"><p style="margin:0;font-size:0.8rem;">No recent context</p></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TOOLS VIEW -->
+        <div class="view" id="view-tools">
+            <div class="page-view">
+                <h2>Tools</h2>
+                <p>Capability modules. Only modules connected to the backend are active.</p>
+                <div class="tool-section">
+                    <div class="tool-section-title">Research</div>
+                    <div class="tool-grid">
+                        <div class="tool-chip planned"><span class="chip-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>Web Search<span class="tool-badge">Planned</span></div>
+                        <div class="tool-chip planned"><span class="chip-icon"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>Knowledge<span class="tool-badge">Planned</span></div>
+                        <div class="tool-chip planned"><span class="chip-icon"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h14"/></svg></span>Summarize<span class="tool-badge">Planned</span></div>
+                    </div>
+                </div>
+                <div class="tool-section">
+                    <div class="tool-section-title">Development</div>
+                    <div class="tool-grid">
+                        <div class="tool-chip planned"><span class="chip-icon"><svg viewBox="0 0 24 24"><path d="M8 9l-4 3 4 3M16 9l4 3-4 3M13 6l-2 12"/></svg></span>Code<span class="tool-badge">Planned</span></div>
+                        <div class="tool-chip planned"><span class="chip-icon"><svg viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg></span>Debug<span class="tool-badge">Planned</span></div>
+                        <div class="tool-chip planned"><span class="chip-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 20h8"/></svg></span>Web App<span class="tool-badge">Planned</span></div>
+                        <div class="tool-chip planned"><span class="chip-icon"><svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg></span>File Tools<span class="tool-badge">Planned</span></div>
+                    </div>
+                </div>
+                <div class="tool-section">
+                    <div class="tool-section-title">Creative</div>
+                    <div class="tool-grid">
+                        <div class="tool-chip planned"><span class="chip-icon"><svg viewBox="0 0 24 24"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"/></svg></span>Animation<span class="tool-badge">Planned</span></div>
+                        <div class="tool-chip planned"><span class="chip-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></span>Design / Image<span class="tool-badge">Planned</span></div>
+                        <div class="tool-chip planned"><span class="chip-icon"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M10 10l5 3-5 3v-6z"/></svg></span>Video<span class="tool-badge">Planned</span></div>
+                    </div>
+                </div>
+                <div class="tool-section">
+                    <div class="tool-section-title">System</div>
+                    <div class="tool-grid">
+                        <div class="tool-chip" onclick="switchView('memory', document.querySelector('[data-view=memory]'))"><span class="chip-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5"/></svg></span>Memory</div>
+                        <div class="tool-chip" onclick="switchView('projects', document.querySelector('[data-view=projects]'))"><span class="chip-icon"><svg viewBox="0 0 24 24"><rect x="3.5" y="6" width="17" height="13" rx="2"/><path d="M3.5 9h17"/></svg></span>Projects</div>
+                        <div class="tool-chip" onclick="switchView('settings', document.querySelector('[data-view=settings]'))"><span class="chip-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/></svg></span>Settings</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SETTINGS VIEW -->
+        <div class="view" id="view-settings">
+            <div class="page-view">
+                <h2>Settings</h2>
+                <p>Local preferences. Backend-related options take effect after connection.</p>
+                <div class="card">
+                    <h3><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>Appearance</h3>
+                    <div class="row-line"><span>Dark mode</span><div class="toggle on" id="toggleDark" onclick="toggleSetting(this)"></div></div>
+                    <div class="row-line"><span>Reduced motion</span><div class="toggle" id="toggleMotion" onclick="toggleSetting(this)"></div></div>
+                </div>
+                <div class="card">
+                    <h3><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" stroke="#00E5FF"/><circle cx="12" cy="12" r="2" fill="#00E5FF"/></svg>Response style</h3>
+                    <div class="seg" id="styleSeg">
+                        <div class="seg-btn active" data-style="concise" onclick="setStyle(this)">Concise</div>
+                        <div class="seg-btn" data-style="balanced" onclick="setStyle(this)">Balanced</div>
+                        <div class="seg-btn" data-style="detailed" onclick="setStyle(this)">Detailed</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></svg>Voice</h3>
+                    <div class="row-line"><span>Voice input</span><span class="rl-dim">Not connected</span></div>
+                    <div class="row-line"><span>Voice output</span><span class="rl-dim">Not connected</span></div>
+                </div>
+                <div class="card">
+                    <h3><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18"/></svg>Language &amp; Network</h3>
+                    <div class="row-line"><span>Language</span><span class="rl-dim">English</span></div>
+                    <div class="row-line"><span>Backend endpoint</span><span class="rl-dim" id="backendUrlLabel">/api/chat</span></div>
+                    <div class="row-line"><span>Internet / research</span><span class="rl-dim">Requires backend</span></div>
+                </div>
+                <div class="card">
+                    <h3><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>System</h3>
+                    <div class="row-line"><span>Version</span><span class="rl-dim">UI 0.2</span></div>
+                    <div class="row-line"><span>Memory store</span><span class="rl-dim">Backend</span></div>
+                    <div class="row-line"><span>Session</span><span class="rl-dim" id="sessionLabel">Local only</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Connects the main logic file -->
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
