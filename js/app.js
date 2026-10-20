@@ -230,5 +230,66 @@ chatInput.addEventListener('keydown', (e) => {
     }
 });
 
+// --- MEMORY RENDERING (READ-ONLY) ---
+function renderMemory() {
+    const mem = Memory.load();
+
+    // 1. Render Profile
+    const profileDiv = document.getElementById('memProfile');
+    if (profileDiv && mem.profile) {
+        profileDiv.innerHTML = Object.entries(mem.profile)
+            .map(([key, value]) => `<div class="memory-item"><strong style="text-transform:capitalize;">${key.replace('_', ' ')}:</strong> ${value}</div>`)
+            .join('');
+    }
+
+    // 2. Render Preferences
+    const prefDiv = document.getElementById('memPreferences');
+    if (prefDiv && mem.learning_preferences) {
+        prefDiv.innerHTML = Object.entries(mem.learning_preferences)
+            .map(([key, value]) => `<div class="memory-item"><strong style="text-transform:capitalize;">${key}:</strong> ${value}</div>`)
+            .join('');
+    }
+
+    // 3. Render Projects
+    const projDiv = document.getElementById('memProjects');
+    const projListDiv = document.getElementById('projectsList');
+    
+    if (mem.projects && mem.projects.length > 0) {
+        const projectHTML = mem.projects.map(p => `
+            <div class="memory-item">
+                <strong>${p.name}</strong> <span class="proj-status ${p.status}">${p.status}</span><br>
+                <span style="font-size:0.75rem; color:var(--text-secondary); display:block; margin-top:4px;">${p.desc}</span>
+            </div>
+        `).join('');
+        
+        if (projDiv) projDiv.innerHTML = projectHTML;
+        if (projListDiv) projListDiv.innerHTML = projectHTML; // Update Projects tab too
+    }
+
+    // 4. Render Notes/Directives
+    const noteDiv = document.getElementById('memKnowledge');
+    if (noteDiv && mem.directives) {
+        noteDiv.innerHTML = mem.directives
+            .map(d => `<div class="memory-item">${d}</div>`)
+            .join('');
+    }
+}
+
+// Hook into switchView so it renders when you click the tabs
+const originalSwitchView = switchView;
+window.switchView = function(viewName, navEl) {
+    originalSwitchView(viewName, navEl);
+    if (viewName === 'memory' || viewName === 'projects') {
+        renderMemory();
+    }
+};
+
+// EXPOSE TO WINDOW
+window.renderMemory = renderMemory;
+
+// Start the app
+renderMemory(); // Load memory on boot
+init();
+
 // Start the app
 init();
