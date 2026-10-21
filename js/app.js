@@ -70,7 +70,39 @@ function addMessage(sender, text, meta) {
     row.className = 'message ' + sender;
     
     if (sender === 'system') {
-        row.innerHTML = `<div class="message-col" style="width:100%"><div class="message-bubble">${escapeHTML(text)}</div></div>`;
+                // Parse Markdown safely
+        const rawHTML = marked.parse(text);
+        
+        row.innerHTML = `
+            <div class="msg-avatar">${avatar}</div>
+            <div class="message-col">
+                <span class="message-sender">${label}</span>
+                <div class="message-bubble">${rawHTML}</div>
+                <span class="message-time">${getTimeString()}</span>
+                ${metaHtml}
+            </div>`;
+
+        // Add copy buttons and highlighting to code blocks
+        row.querySelectorAll('pre code').forEach((block) => {
+            hljs.highlightElement(block);
+            
+            const wrapper = document.createElement('div');
+            wrapper.className = 'code-block-wrapper';
+            
+            const header = document.createElement('div');
+            header.className = 'code-block-header';
+            header.innerHTML = `<span>Code</span><button class="copy-btn">Copy</button>`;
+            
+            block.parentNode.parentNode.insertBefore(wrapper, block.parentNode);
+            wrapper.appendChild(header);
+            wrapper.appendChild(block.parentNode);
+
+            header.querySelector('.copy-btn').addEventListener('click', (e) => {
+                navigator.clipboard.writeText(block.innerText);
+                e.target.textContent = 'Copied!';
+                setTimeout(() => e.target.textContent = 'Copy', 2000);
+            });
+        });
     } else {
         const label = sender === 'user' ? 'You' : 'Quentrix';
         const avatar = sender === 'user' ? userAvatarSVG : aiAvatarSVG;
