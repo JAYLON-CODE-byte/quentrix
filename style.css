@@ -564,3 +564,33 @@ body::before {
     .chat-area { padding: 8px 12px; gap: 8px; }
     .input-area { padding: 6px 10px 8px; }
 }
+
+/* --- MARKDOWN & CODE BLOCKS --- */
+.message-bubble p { margin-bottom: 8px; }
+.message-bubble p:last-child { margin-bottom: 0; }
+.message-bubble strong { font-weight: 600; color: #fff; }
+.message-bubble ul, .message-bubble ol { margin-left: 20px; margin-bottom: 8px; }
+.message-bubble li { margin-bottom: 4px; }
+
+.code-block-wrapper {
+    position: relative;
+    margin: 10px 0;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--border-subtle);
+    background: #0d1117; /* GitHub dark bg */
+}
+.code-block-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 12px; background: #161b22; border-bottom: 1px solid #30363d;
+    font-family: var(--font-mono); font-size: 0.65rem; color: #8b949e;
+}
+.copy-btn {
+    background: transparent; border: none; color: #8b949e; cursor: pointer;
+    font-family: var(--font-mono); font-size: 0.65rem; transition: color 0.2s;
+}
+.copy-btn:hover { color: #fff; }
+.code-block-wrapper pre { margin: 0; padding: 12px; overflow-x: auto; }
+.code-block-wrapper code {
+    font-family: var(--font-mono); font-size: 0.8rem; color: #c9d1d9;
+}
