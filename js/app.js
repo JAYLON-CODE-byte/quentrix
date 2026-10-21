@@ -1,6 +1,6 @@
-// APP: The UI controller
 import { CONFIG, state } from './config.js';
 import { callAI } from './brain.js';
+import { Memory } from './memory.js';
 
 // --- DOM Elements ---
 const chatArea = document.getElementById('chatArea');
@@ -25,7 +25,6 @@ function setStatus(status, label) {
     const text = (label || status).toUpperCase();
     headerStatus.dataset.status = status;
     headerStatusText.textContent = text;
-
     sidebarStatusDot.className = 'status-dot';
     if (status === 'offline' || status === 'error') sidebarStatusDot.classList.add(status);
     else if (status !== 'ready') sidebarStatusDot.classList.add('thinking');
@@ -77,6 +76,7 @@ function addMessage(sender, text, meta) {
         const avatar = sender === 'user' ? userAvatarSVG : aiAvatarSVG;
         let metaHtml = meta ? `<span class="message-meta">${escapeHTML(meta)}</span>` : '';
         
+        // Notice: We will upgrade this to Markdown in Step 2
         row.innerHTML = `
             <div class="msg-avatar">${avatar}</div>
             <div class="message-col">
@@ -119,9 +119,7 @@ async function sendMessage() {
     showActivity(['Receiving request', 'Connecting to AI Brain']);
     showTyping();
 
-    // Call the brain!
     const result = await callAI(text);
-
     removeTyping();
 
     if (result.status === 'ready') {
@@ -137,6 +135,47 @@ async function sendMessage() {
     state.isProcessing = false;
     sendBtn.disabled = false;
     chatInput.focus();
+}
+
+// --- MEMORY RENDERING ---
+function renderMemory() {
+    const mem = Memory.load();
+
+    const profileDiv = document.getElementById('memProfile');
+    if (profileDiv && mem.profile) {
+        profileDiv.innerHTML = Object.entries(mem.profile)
+            .map(([key, value]) => `<div class="memory-item"><strong style="text-transform:capitalize;">${key.replace(/_/g, ' ')}:</strong> ${value}</div>`)
+            .join('');
+    }
+
+    const prefDiv = document.getElementById('memPreferences');
+    if (prefDiv && mem.learning_preferences) {
+        prefDiv.innerHTML = Object.entries(mem.learning_preferences)
+            .map(([key, value]) => `<div class="memory-item"><strong style="text-transform:capitalize;">${key}:</strong> ${value}</div>`)
+            .join('');
+    }
+
+    const projDiv = document.getElementById('memProjects');
+    const projListDiv = document.getElementById('projectsList');
+    
+    if (mem.projects && mem.projects.length > 0) {
+        const projectHTML = mem.projects.map(p => `
+            <div class="memory-item">
+                <strong>${p.name}</strong> <span class="proj-status ${p.status}">${p.status}</span><br>
+                <span style="font-size:0.75rem; color:var(--text-secondary); display:block; margin-top:4px;">${p.desc}</span>
+            </div>
+        `).join('');
+        
+        if (projDiv) projDiv.innerHTML = projectHTML;
+        if (projListDiv) projListDiv.innerHTML = projectHTML;
+    }
+
+    const noteDiv = document.getElementById('memKnowledge');
+    if (noteDiv && mem.directives) {
+        noteDiv.innerHTML = mem.directives
+            .map(d => `<div class="memory-item">${d}</div>`)
+            .join('');
+    }
 }
 
 // --- Navigation & UI ---
@@ -164,15 +203,19 @@ function switchView(viewName, navEl) {
     const target = document.getElementById('view-' + viewName);
     if (target) target.classList.add('active');
     viewContainer.scrollTop = 0;
+    
     if (window.innerWidth <= 768) closeSidebar();
     if (viewName === 'chat') setTimeout(() => chatInput.focus(), 150);
+    
+    // Call memory render when switching to these tabs
+    if (viewName === 'memory' || viewName === 'projects') {
+        renderMemory();
+    }
 }
 
 function toggleSetting(el) {
     el.classList.toggle('on');
-    if (el.id === 'toggleMotion') {
-        state.reducedMotion = el.classList.contains('on');
-    }
+    if (el.id === 'toggleMotion') state.reducedMotion = el.classList.contains('on');
 }
 
 function setStyle(el) {
@@ -181,7 +224,6 @@ function setStyle(el) {
     state.responseStyle = el.dataset.style || 'concise';
 }
 
-// --- Stubs (Placeholders for future features) ---
 function handleAttachment() {
     if (state.currentView !== 'chat') switchView('chat');
     addMessage('system', 'File attachment UI is ready. Backend analysis is not connected yet.');
@@ -201,10 +243,10 @@ function init() {
     setStatus('ready', 'Ready');
     chatInput.focus();
     if (window.innerWidth <= 768) closeSidebar();
+    renderMemory(); // Load memory on boot
 }
 
-// EXPOSE FUNCTIONS TO WINDOW
-// This allows the inline `onclick` in index.html to find these functions
+// EXPOSE TO WINDOW
 window.switchView = switchView;
 window.toggleSidebar = toggleSidebar;
 window.closeSidebar = closeSidebar;
@@ -221,75 +263,8 @@ window.addEventListener('resize', () => {
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && state.sidebarOpen) closeSidebar();
 });
-
-// Handle Enter key in chat
 chatInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 });
 
-// --- MEMORY RENDERING (READ-ONLY) ---
-function renderMemory() {
-    const mem = Memory.load();
-
-    // 1. Render Profile
-    const profileDiv = document.getElementById('memProfile');
-    if (profileDiv && mem.profile) {
-        profileDiv.innerHTML = Object.entries(mem.profile)
-            .map(([key, value]) => `<div class="memory-item"><strong style="text-transform:capitalize;">${key.replace('_', ' ')}:</strong> ${value}</div>`)
-            .join('');
-    }
-
-    // 2. Render Preferences
-    const prefDiv = document.getElementById('memPreferences');
-    if (prefDiv && mem.learning_preferences) {
-        prefDiv.innerHTML = Object.entries(mem.learning_preferences)
-            .map(([key, value]) => `<div class="memory-item"><strong style="text-transform:capitalize;">${key}:</strong> ${value}</div>`)
-            .join('');
-    }
-
-    // 3. Render Projects
-    const projDiv = document.getElementById('memProjects');
-    const projListDiv = document.getElementById('projectsList');
-    
-    if (mem.projects && mem.projects.length > 0) {
-        const projectHTML = mem.projects.map(p => `
-            <div class="memory-item">
-                <strong>${p.name}</strong> <span class="proj-status ${p.status}">${p.status}</span><br>
-                <span style="font-size:0.75rem; color:var(--text-secondary); display:block; margin-top:4px;">${p.desc}</span>
-            </div>
-        `).join('');
-        
-        if (projDiv) projDiv.innerHTML = projectHTML;
-        if (projListDiv) projListDiv.innerHTML = projectHTML; // Update Projects tab too
-    }
-
-    // 4. Render Notes/Directives
-    const noteDiv = document.getElementById('memKnowledge');
-    if (noteDiv && mem.directives) {
-        noteDiv.innerHTML = mem.directives
-            .map(d => `<div class="memory-item">${d}</div>`)
-            .join('');
-    }
-}
-
-// Hook into switchView so it renders when you click the tabs
-const originalSwitchView = switchView;
-window.switchView = function(viewName, navEl) {
-    originalSwitchView(viewName, navEl);
-    if (viewName === 'memory' || viewName === 'projects') {
-        renderMemory();
-    }
-};
-
-// EXPOSE TO WINDOW
-window.renderMemory = renderMemory;
-
-// Start the app
-renderMemory(); // Load memory on boot
-init();
-
-// Start the app
 init();
