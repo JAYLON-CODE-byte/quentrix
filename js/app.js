@@ -186,7 +186,9 @@ async function sendMessage() {
     showActivity(['Receiving request', 'Connecting to AI Brain']);
     showTyping();
 
-    const result = await callAI(text);
+    const result = await callAI(textconst result = await callAI(text, (activityText) => {
+    showActivity(['Receiving request', activityText]);
+});
     removeTyping();
 
     if (result.status === 'ready') {
