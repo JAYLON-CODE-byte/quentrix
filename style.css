@@ -594,3 +594,34 @@ body::before {
 .code-block-wrapper code {
     font-family: var(--font-mono); font-size: 0.8rem; color: #c9d1d9;
 }
+
+/* --- RUN BUTTON & GAME PREVIEW --- */
+.code-block-header { display: flex; justify-content: space-between; align-items: center; }
+.code-btn-group { display: flex; gap: 10px; align-items: center; }
+
+.run-btn {
+    background: rgba(0, 229, 255, 0.15); border: 1px solid var(--primary); 
+    color: var(--primary); padding: 2px 8px; border-radius: 4px;
+    font-family: var(--font-mono); font-size: 0.65rem; cursor: pointer;
+    transition: all 0.2s; font-weight: bold;
+}
+.run-btn:hover { background: var(--primary); color: #000; }
+
+.preview-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+    z-index: 9999; display: flex; flex-direction: column;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s;
+}
+.preview-overlay.active { opacity: 1; pointer-events: auto; }
+.preview-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 20px; background: var(--bg-sidebar); border-bottom: 1px solid var(--border-subtle);
+}
+.preview-header span { font-family: var(--font-display); font-weight: bold; color: var(--primary); }
+.close-preview {
+    background: var(--error); color: white; border: none; padding: 6px 14px;
+    border-radius: 6px; cursor: pointer; font-weight: bold; font-family: var(--font-body);
+}
+.preview-iframe {
+    flex: 1; width: 100%; height: 100%; border: none; background: #fff;
+}
