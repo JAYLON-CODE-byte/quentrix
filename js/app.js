@@ -70,7 +70,13 @@ function addMessage(sender, text, meta) {
     row.className = 'message ' + sender;
     
     if (sender === 'system') {
-                // Parse Markdown safely
+        row.innerHTML = `<div class="message-col" style="width:100%"><div class="message-bubble">${escapeHTML(text)}</div></div>`;
+    } else {
+        const label = sender === 'user' ? 'You' : 'Quentrix';
+        const avatar = sender === 'user' ? userAvatarSVG : aiAvatarSVG;
+        let metaHtml = meta ? `<span class="message-meta">${escapeHTML(meta)}</span>` : '';
+        
+        // This is the magic line that converts text to HTML
         const rawHTML = marked.parse(text);
         
         row.innerHTML = `
@@ -82,7 +88,7 @@ function addMessage(sender, text, meta) {
                 ${metaHtml}
             </div>`;
 
-        // Add copy buttons and highlighting to code blocks
+        // This adds the syntax highlighting and copy button to code blocks
         row.querySelectorAll('pre code').forEach((block) => {
             hljs.highlightElement(block);
             
@@ -103,20 +109,6 @@ function addMessage(sender, text, meta) {
                 setTimeout(() => e.target.textContent = 'Copy', 2000);
             });
         });
-    } else {
-        const label = sender === 'user' ? 'You' : 'Quentrix';
-        const avatar = sender === 'user' ? userAvatarSVG : aiAvatarSVG;
-        let metaHtml = meta ? `<span class="message-meta">${escapeHTML(meta)}</span>` : '';
-        
-        // Notice: We will upgrade this to Markdown in Step 2
-        row.innerHTML = `
-            <div class="msg-avatar">${avatar}</div>
-            <div class="message-col">
-                <span class="message-sender">${label}</span>
-                <div class="message-bubble">${escapeHTML(text)}</div>
-                <span class="message-time">${getTimeString()}</span>
-                ${metaHtml}
-            </div>`;
     }
     chatArea.appendChild(row);
     scrollChatToBottom();
