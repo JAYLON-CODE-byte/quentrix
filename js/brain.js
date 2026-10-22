@@ -6,7 +6,7 @@ async function searchWeb(query) {
     try {
         let results = [];
         
-        // 1. Search DuckDuckGo for general answers
+        // 1. Search DuckDuckGo
         const ddgRes = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1`);
         const ddgData = await ddgRes.json();
         
@@ -18,7 +18,7 @@ async function searchWeb(query) {
             });
         }
 
-        // 2. Search Wikipedia for deep factual data
+        // 2. Search Wikipedia
         const wikiRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=3&srsearch=${encodeURIComponent(query)}`);
         const wikiData = await wikiRes.json();
         
@@ -38,7 +38,6 @@ async function searchWeb(query) {
 export async function callAI(message, onActivity) {
     const mem = Memory.load();
 
-    // THE CONSTITUTION: The "Pro Coder" System Prompt
     const systemPrompt = `You are QUENTRIX, the personal AI system of Jaylon.
 You are an Autonomous Senior Developer and Researcher.
 
@@ -73,12 +72,10 @@ The system will run the search and give you the results. Then, you can write the
 
     let loopCount = 0;
     
-    // We allow the AI to think/loop up to 3 times (Search -> Read -> Code)
     while (loopCount < 3) {
         try {
             onActivity("Thinking...");
             
-            // Using Pollinations OpenAI-compatible endpoint
             const res = await fetch("https://text.pollinations.ai/openai", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -89,7 +86,6 @@ The system will run the search and give you the results. Then, you can write the
             const data = await res.json();
             let reply = data.choices[0].message.content;
 
-            // Check if the AI wants to use the Search Tool
             const toolRegex = /<tool>\s*(\{[\s\S]*?\})\s*<\/tool>/;
             const toolMatch = reply.match(toolRegex);
 
@@ -100,19 +96,16 @@ The system will run the search and give you the results. Then, you can write the
                 if (toolCall && toolCall.name === "search") {
                     onActivity(`Deep Searching: ${toolCall.query}`);
                     
-                    // Run the search
                     const searchResult = await searchWeb(toolCall.query);
                     
-                    // Feed the result back to the AI
                     messages.push({ role: "assistant", content: reply });
                     messages.push({ role: "user", content: `[System Tool Result]:\n${searchResult}\n\nNow answer the original question using this data. Generate the full code immediately.` });
                     
                     loopCount++;
-                    continue; // Loop back to let the AI read the results
+                    continue; 
                 }
             }
 
-            // If no tool call, the AI is ready to answer
             return {
                 response: reply,
                 status: 'ready',
@@ -123,6 +116,5 @@ The system will run the search and give you the results. Then, you can write the
             return { response: null, status: 'offline', error: err.message };
         }
     }
-    
     return { response: "I got stuck in a loop while searching.", status: 'error' };
 }
