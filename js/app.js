@@ -65,6 +65,30 @@ function scrollChatToBottom() {
     requestAnimationFrame(() => { chatArea.scrollTop = chatArea.scrollHeight; });
 }
 
+// --- The Magic Preview Window ---
+function openPreview(code) {
+    let overlay = document.getElementById('previewOverlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'previewOverlay';
+        overlay.className = 'preview-overlay';
+        overlay.innerHTML = `
+            <div class="preview-header">
+                <span>QUENTRIX PREVIEW</span>
+                <button class="close-preview" onclick="document.getElementById('previewOverlay').classList.remove('active')">Close</button>
+            </div>
+            <iframe class="preview-iframe" id="previewIframe"></iframe>
+        `;
+        document.body.appendChild(overlay);
+    }
+    
+    const iframe = document.getElementById('previewIframe');
+    // This securely runs the HTML inside the iframe
+    iframe.srcdoc = code;
+    
+    overlay.classList.add('active');
+}
+
 function addMessage(sender, text, meta) {
     const row = document.createElement('div');
     row.className = 'message ' + sender;
@@ -76,7 +100,6 @@ function addMessage(sender, text, meta) {
         const avatar = sender === 'user' ? userAvatarSVG : aiAvatarSVG;
         let metaHtml = meta ? `<span class="message-meta">${escapeHTML(meta)}</span>` : '';
         
-        // This is the magic line that converts text to HTML
         const rawHTML = marked.parse(text);
         
         row.innerHTML = `
@@ -88,26 +111,46 @@ function addMessage(sender, text, meta) {
                 ${metaHtml}
             </div>`;
 
-        // This adds the syntax highlighting and copy button to code blocks
+        // Process all code blocks
         row.querySelectorAll('pre code').forEach((block) => {
             hljs.highlightElement(block);
+            
+            // Check if it's HTML (so we know whether to show the Run button)
+            const isHTML = block.className.includes('language-html') || block.className.includes('language-xml');
             
             const wrapper = document.createElement('div');
             wrapper.className = 'code-block-wrapper';
             
             const header = document.createElement('div');
             header.className = 'code-block-header';
-            header.innerHTML = `<span>Code</span><button class="copy-btn">Copy</button>`;
+            
+            // Create buttons
+            let btnHTML = `<div class="code-btn-group">`;
+            if (isHTML) {
+                btnHTML += `<button class="run-btn">▶ Run</button>`;
+            }
+            btnHTML += `<button class="copy-btn">Copy</button></div>`;
+            
+            header.innerHTML = `<span>Code</span>${btnHTML}`;
             
             block.parentNode.parentNode.insertBefore(wrapper, block.parentNode);
             wrapper.appendChild(header);
             wrapper.appendChild(block.parentNode);
 
+            // Copy Button Logic
             header.querySelector('.copy-btn').addEventListener('click', (e) => {
                 navigator.clipboard.writeText(block.innerText);
                 e.target.textContent = 'Copied!';
                 setTimeout(() => e.target.textContent = 'Copy', 2000);
             });
+
+            // Run Button Logic
+            const runBtn = header.querySelector('.run-btn');
+            if (runBtn) {
+                runBtn.addEventListener('click', () => {
+                    openPreview(block.innerText);
+                });
+            }
         });
     }
     chatArea.appendChild(row);
@@ -231,7 +274,6 @@ function switchView(viewName, navEl) {
     if (window.innerWidth <= 768) closeSidebar();
     if (viewName === 'chat') setTimeout(() => chatInput.focus(), 150);
     
-    // Call memory render when switching to these tabs
     if (viewName === 'memory' || viewName === 'projects') {
         renderMemory();
     }
@@ -267,7 +309,7 @@ function init() {
     setStatus('ready', 'Ready');
     chatInput.focus();
     if (window.innerWidth <= 768) closeSidebar();
-    renderMemory(); // Load memory on boot
+    renderMemory();
 }
 
 // EXPOSE TO WINDOW
