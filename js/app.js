@@ -2,7 +2,6 @@ import { CONFIG, state } from './config.js';
 import { callAI } from './brain.js';
 import { Memory } from './memory.js';
 
-// --- DOM Elements ---
 const chatArea = document.getElementById('chatArea');
 const chatInput = document.getElementById('chatInput');
 const sendBtn = document.getElementById('sendBtn');
@@ -19,7 +18,6 @@ const sidebarStatusText = document.getElementById('sidebarStatusText');
 const aiAvatarSVG = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="none" stroke="#00E5FF" stroke-width="1.6"/><circle cx="12" cy="12" r="2" fill="#00E5FF"/></svg>';
 const userAvatarSVG = '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="#6D5DFC" stroke-width="1.6"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6" fill="none" stroke="#6D5DFC" stroke-width="1.6"/></svg>';
 
-// --- Status & Activity ---
 function setStatus(status, label) {
     state.status = status;
     const text = (label || status).toUpperCase();
@@ -50,7 +48,6 @@ function hideActivity() {
     activitySteps.innerHTML = '';
 }
 
-// --- Chat UI ---
 function getTimeString() {
     return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
@@ -65,7 +62,6 @@ function scrollChatToBottom() {
     requestAnimationFrame(() => { chatArea.scrollTop = chatArea.scrollHeight; });
 }
 
-// --- The Magic Preview Window ---
 function openPreview(code) {
     let overlay = document.getElementById('previewOverlay');
     if (!overlay) {
@@ -75,17 +71,19 @@ function openPreview(code) {
         overlay.innerHTML = `
             <div class="preview-header">
                 <span>QUENTRIX PREVIEW</span>
-                <button class="close-preview" onclick="document.getElementById('previewOverlay').classList.remove('active')">Close</button>
+                <button class="close-preview" id="closePreviewBtn">Close</button>
             </div>
             <iframe class="preview-iframe" id="previewIframe"></iframe>
         `;
         document.body.appendChild(overlay);
+        
+        document.getElementById('closePreviewBtn').addEventListener('click', () => {
+            overlay.classList.remove('active');
+        });
     }
     
     const iframe = document.getElementById('previewIframe');
-    // This securely runs the HTML inside the iframe
     iframe.srcdoc = code;
-    
     overlay.classList.add('active');
 }
 
@@ -94,11 +92,11 @@ function addMessage(sender, text, meta) {
     row.className = 'message ' + sender;
     
     if (sender === 'system') {
-        row.innerHTML = `<div class="message-col" style="width:100%"><div class="message-bubble">${escapeHTML(text)}</div></div>`;
+        row.innerHTML = '<div class="message-col" style="width:100%"><div class="message-bubble">' + escapeHTML(text) + '</div></div>';
     } else {
         const label = sender === 'user' ? 'You' : 'Quentrix';
         const avatar = sender === 'user' ? userAvatarSVG : aiAvatarSVG;
-        let metaHtml = meta ? `<span class="message-meta">${escapeHTML(meta)}</span>` : '';
+        let metaHtml = meta ? '<span class="message-meta">' + escapeHTML(meta) + '</span>' : '';
         
         const rawHTML = marked.parse(text);
         
@@ -111,11 +109,9 @@ function addMessage(sender, text, meta) {
                 ${metaHtml}
             </div>`;
 
-        // Process all code blocks
         row.querySelectorAll('pre code').forEach((block) => {
             hljs.highlightElement(block);
             
-            // Check if it's HTML (so we know whether to show the Run button)
             const isHTML = block.className.includes('language-html') || block.className.includes('language-xml');
             
             const wrapper = document.createElement('div');
@@ -124,12 +120,11 @@ function addMessage(sender, text, meta) {
             const header = document.createElement('div');
             header.className = 'code-block-header';
             
-            // Create buttons
-            let btnHTML = `<div class="code-btn-group">`;
+            let btnHTML = '<div class="code-btn-group">';
             if (isHTML) {
-                btnHTML += `<button class="run-btn">▶ Run</button>`;
+                btnHTML += '<button class="run-btn">▶ Run</button>';
             }
-            btnHTML += `<button class="copy-btn">Copy</button></div>`;
+            btnHTML += '<button class="copy-btn">Copy</button></div>';
             
             header.innerHTML = `<span>Code</span>${btnHTML}`;
             
@@ -137,14 +132,12 @@ function addMessage(sender, text, meta) {
             wrapper.appendChild(header);
             wrapper.appendChild(block.parentNode);
 
-            // Copy Button Logic
             header.querySelector('.copy-btn').addEventListener('click', (e) => {
                 navigator.clipboard.writeText(block.innerText);
                 e.target.textContent = 'Copied!';
                 setTimeout(() => e.target.textContent = 'Copy', 2000);
             });
 
-            // Run Button Logic
             const runBtn = header.querySelector('.run-btn');
             if (runBtn) {
                 runBtn.addEventListener('click', () => {
@@ -171,7 +164,6 @@ function removeTyping() {
     if (el) el.remove();
 }
 
-// --- Core Functions ---
 async function sendMessage() {
     if (state.isProcessing) return;
     const text = chatInput.value.trim();
@@ -186,9 +178,10 @@ async function sendMessage() {
     showActivity(['Receiving request', 'Connecting to AI Brain']);
     showTyping();
 
-    const result = await callAI(textconst result = await callAI(text, (activityText) => {
-    showActivity(['Receiving request', activityText]);
-});
+    const result = await callAI(text, (activityText) => {
+        showActivity(['Receiving request', activityText]);
+    });
+    
     removeTyping();
 
     if (result.status === 'ready') {
@@ -206,48 +199,52 @@ async function sendMessage() {
     chatInput.focus();
 }
 
-// --- MEMORY RENDERING ---
 function renderMemory() {
     const mem = Memory.load();
 
     const profileDiv = document.getElementById('memProfile');
     if (profileDiv && mem.profile) {
-        profileDiv.innerHTML = Object.entries(mem.profile)
-            .map(([key, value]) => `<div class="memory-item"><strong style="text-transform:capitalize;">${key.replace(/_/g, ' ')}:</strong> ${value}</div>`)
-            .join('');
+        let html = '';
+        for (let key in mem.profile) {
+            let label = key.replace(/_/g, ' ');
+            html += '<div class="memory-item"><strong style="text-transform:capitalize;">' + label + ':</strong> ' + mem.profile[key] + '</div>';
+        }
+        profileDiv.innerHTML = html;
     }
 
     const prefDiv = document.getElementById('memPreferences');
     if (prefDiv && mem.learning_preferences) {
-        prefDiv.innerHTML = Object.entries(mem.learning_preferences)
-            .map(([key, value]) => `<div class="memory-item"><strong style="text-transform:capitalize;">${key}:</strong> ${value}</div>`)
-            .join('');
+        let html = '';
+        for (let key in mem.learning_preferences) {
+            html += '<div class="memory-item"><strong style="text-transform:capitalize;">' + key + ':</strong> ' + mem.learning_preferences[key] + '</div>';
+        }
+        prefDiv.innerHTML = html;
     }
 
     const projDiv = document.getElementById('memProjects');
     const projListDiv = document.getElementById('projectsList');
-    
     if (mem.projects && mem.projects.length > 0) {
-        const projectHTML = mem.projects.map(p => `
-            <div class="memory-item">
-                <strong>${p.name}</strong> <span class="proj-status ${p.status}">${p.status}</span><br>
-                <span style="font-size:0.75rem; color:var(--text-secondary); display:block; margin-top:4px;">${p.desc}</span>
-            </div>
-        `).join('');
-        
-        if (projDiv) projDiv.innerHTML = projectHTML;
-        if (projListDiv) projListDiv.innerHTML = projectHTML;
+        let html = '';
+        mem.projects.forEach(p => {
+            html += '<div class="memory-item">';
+            html += '<strong>' + p.name + '</strong> <span class="proj-status ' + p.status + '">' + p.status + '</span><br>';
+            html += '<span style="font-size:0.75rem; color:var(--text-secondary); display:block; margin-top:4px;">' + p.desc + '</span>';
+            html += '</div>';
+        });
+        if (projDiv) projDiv.innerHTML = html;
+        if (projListDiv) projListDiv.innerHTML = html;
     }
 
     const noteDiv = document.getElementById('memKnowledge');
     if (noteDiv && mem.directives) {
-        noteDiv.innerHTML = mem.directives
-            .map(d => `<div class="memory-item">${d}</div>`)
-            .join('');
+        let html = '';
+        mem.directives.forEach(d => {
+            html += '<div class="memory-item">' + d + '</div>';
+        });
+        noteDiv.innerHTML = html;
     }
 }
 
-// --- Navigation & UI ---
 function toggleSidebar() {
     state.sidebarOpen = !state.sidebarOpen;
     sidebar.classList.toggle('open', state.sidebarOpen);
@@ -265,7 +262,7 @@ function switchView(viewName, navEl) {
     document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
     if (navEl) navEl.classList.add('active');
     else {
-        const match = document.querySelector(`.nav-item[data-view="${viewName}"]`);
+        const match = document.querySelector('.nav-item[data-view="' + viewName + '"]');
         if (match) match.classList.add('active');
     }
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -303,10 +300,9 @@ function handleVoice() {
 }
 
 function runResearch() {
-    addMessage('system', 'Research requires the Python backend to be connected.');
+    addMessage('system', 'Use the chat to trigger deep searches.');
 }
 
-// --- Initialization ---
 function init() {
     setStatus('ready', 'Ready');
     chatInput.focus();
@@ -314,7 +310,6 @@ function init() {
     renderMemory();
 }
 
-// EXPOSE TO WINDOW
 window.switchView = switchView;
 window.toggleSidebar = toggleSidebar;
 window.closeSidebar = closeSidebar;
