@@ -1,7 +1,6 @@
 import { state } from './config.js';
 import { Memory } from './memory.js';
 
-// --- THE SEARCH TOOL ---
 async function searchWeb(query) {
     try {
         let results = [];
@@ -22,7 +21,6 @@ async function searchWeb(query) {
     }
 }
 
-// --- THE AGENT LOOP ---
 export async function callAI(message, onActivity) {
     const mem = Memory.load();
 
@@ -40,43 +38,22 @@ TOOL USE:
 To search the web, output ONLY this exact format:
 <tool>{"name": "search", "query": "your search terms here"}</tool>`;
 
-    let messages = [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: message }
-    ];
-
+    let fullPrompt = `${systemPrompt}\n\nUser: ${message}`;
     let loopCount = 0;
     
     while (loopCount < 3) {
         try {
             onActivity("Thinking...");
             
-            // We use the standard openai endpoint. 
-            const res = await fetch("https://text.pollinations.ai/openai", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ model: "openai", messages: messages })
-            });
+            // Using the simple GET endpoint (returns plain text, no JSON parsing needed)
+            const res = await fetch(`https://text.pollinations.ai/${encodeURIComponent(fullPrompt)}`);
             
-            if (!res.ok) throw new Error("Network error: " + res.status);
-            const data = await res.json();
+            if (!res.ok) throw new Error("Network error");
+            
+            // We just read the plain text directly. No more crashes!
+            let reply = await res.text();
 
-            // DEBUGGING: If it fails again, check your browser console to see what this prints.
-            console.log("Raw AI Response:", data);
-
-            // 1. Safely extract the text (Prevents the "undefined" crash)
-            let reply = "";
-            if (data.choices && data.choices.length > 0 && data.choices[0].message) {
-                reply = data.choices[0].message.content;
-            } else if (data.error) {
-                throw new Error("AI Error: " + (data.error.message || "Rate limited"));
-            } else if (typeof data === 'string') {
-                reply = data; // Sometimes it just returns a string
-            } else {
-                throw new Error("The AI returned an empty response. Please try again.");
-            }
-
-            // 2. Check for Tool Call
+            // Check for Tool Call
             const toolRegex = /<tool>\s*(\{[\s\S]*?\})\s*<\/tool>/;
             const toolMatch = reply.match(toolRegex);
 
@@ -88,25 +65,19 @@ To search the web, output ONLY this exact format:
                     onActivity(`Deep Searching: ${toolCall.query}`);
                     const searchResult = await searchWeb(toolCall.query);
                     
-                    messages.push({ role: "assistant", content: reply });
-                    messages.push({ role: "user", content: `[System Tool Result]:\n${searchResult}\n\nNow answer the original question using this data. Generate the full code immediately.` });
+                    // Append the result to our prompt and try again
+                    fullPrompt += `\n\nQUENTRIX: ${reply}\n\nSystem: [Search Results]:\n${searchResult}\n\nNow answer the original question using this data. Generate the full code immediately.`;
                     
                     loopCount++;
                     continue; 
                 }
             }
 
-            return {
-                response: reply,
-                status: 'ready',
-                capability: 'agent_core'
-            };
+            return { response: reply, status: 'ready', capability: 'agent_core' };
 
         } catch (err) {
-            console.error("Brain Error:", err);
-            // If it fails, return the error message so the UI shows it
             return { response: null, status: 'offline', error: err.message };
         }
     }
-    return { response: "I got stuck in a loop. Please try a simpler prompt.", status: 'error' };
+    return { response: "I got stuck in a loop.", status: 'error' };
 }
